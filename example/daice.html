@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>daice - loaders</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<link type="text/css" rel="stylesheet" href="main.css">
+	</head>
+  
+	<body>
+		<div id="stage"></div>
+		<!-- <script src="../build/three.min.js"></script> -->
+		<!-- <script src="./jsm/control/OrbitControls.js"></script> -->
+    <script type="module">
+				// 'use strict';		
+				import * as THREE from '../build/three.module.js';
+				import { OBJLoader } from './jsm/loaders/OBJLoader.js';
+				import { MTLLoader } from './jsm/loaders/MTLLoader.js';
+				import { OrbitControls } from './jsm/control/OrbitControls.js';
+
+				var scene;
+				var camera;
+				var renderer;
+				var width = window.innerWidth;
+				var height = window.innerHeight;
+				var	controls;
+
+				init();
+				animate();
+
+				function init(){
+
+					scene = new THREE.Scene();//オブジェクト、かめら、ライトを配置する場所を作成する。
+						// console.log(scene);
+			
+					camera = new THREE.PerspectiveCamera(45,width / height, 1, 1000);//奥行のあるカメラを作成。
+						//PerspectiveCameraというコンストラクタを使って、cameraというインスタンスを生成している。
+						// console.log(camera);
+					camera.position.set(3,3,3);//実態であるcameraは、positonというプロパティをObject3Dというクラスから継承している。
+						//positionは、vector3というクラス（型）であり、vector3のメソッドとしてsetを持っている。
+						//setの引数には、x,y,zの値が必要。
+					camera.lookAt(scene.position);
+						//Object3Dクラスから、メソッドlookAtを継承しているためlookAtが利用できる。引数には、vector3型の変数or x,y,zそれぞれの値を
+						//渡す必要ある。
+						//カメラの視線の先をシーンの中央に見せるためにscene.positionを引数に渡している。
+						//sceneがpositionというプロパティを使える理由は、Object3Dがpositionをプロパティとして持っており、
+						//SceneがObject3Dを継承しているから。
+					scene.add(camera);
+	
+						// 全方向ライトとりあえず設定（ライトが無いと真っ黒に描画される）
+					const ambientLight = new THREE.AmbientLight( 0xffffff, 1 );
+					scene.add( ambientLight );
+	
+					// 座標軸を表示
+					var axes = new THREE.AxisHelper(25);
+					scene.add(axes);
+	
+					const manager = new THREE.LoadingManager( );//LoadingManagerクラスのインスタンスを生成。
+	
+					const mtlLoader = new MTLLoader(manager);
+					mtlLoader.load('models/mtl/dice.mtl', function(materials){
+						materials.preload();
+						const loader = new OBJLoader( manager );//objファイルを読み込むために必要。引数にはLodingManagerクラスのmanagerが必要
+						loader.setMaterials(materials);
+						loader.load( 'models/obj/dice.obj', function ( obj ) {
+							scene.add( obj );
+						},	 onProgress, onError );
+						},  onMtlProgress);
+						
+	
+						renderer = new THREE.WebGLRenderer({antialias:true});
+						renderer.setSize(width,height);
+						// renderer.setClearColor(0xefefef);
+						renderer.setPixelRatio(window.devivePixelRatio);
+						document.getElementById('stage').appendChild(renderer.domElement);//インスタンス生成時にrendererはプロパティに
+						//domElementを持つ。domElemtnはcanvasと定義さてているため、stageタグにcanvasタグを追加することで描画領域を描画できる。
+						
+						// controls
+						controls = new OrbitControls(camera,renderer.domElement);
+						console.log(controls);
+						controls.autoRotate = true;
+						// controls.autoRotateSpead;
+				}
+
+				function animate(){
+					requestAnimationFrame( animate );
+					controls.update();
+					render();
+				}
+
+				function render(){
+					camera.lookAt( scene.position );
+					width = window.innerWidth;
+					height = window.innerHeight;
+					camera.aspect = 1;
+					renderer.setSize(width,height);
+					renderer.render( scene, camera );
+				}
+
+				// model
+				function onProgress( xhr ) {
+					if ( xhr.lengthComputable ) {
+						const percentComplete = xhr.loaded / xhr.total * 100;
+						console.log( 'model ' + Math.round( percentComplete, 2 ) + '% downloaded' );
+
+					}}
+				function onMtlProgress( xhr ) {
+					if ( xhr.lengthComputable ) {
+						const percentComplete = xhr.loaded / xhr.total * 100;
+						console.log( 'mtl ' + Math.round( percentComplete, 2 ) + '% downloaded' );
+
+					}}
+
+				function onError() {}
+
+    </script>
+	</body>
+</html>
